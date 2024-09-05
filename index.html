@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css">
+  <style>
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      font-size: 14px;
+    }
+    .form-container {
+      display: inline-block;
+      vertical-align: top;
+      margin-right: 20px;
+      margin-bottom: 20px;
+      padding-left: 20px; /* Added padding on the left side */
+      width: 300px; /* Adjust width as needed */
+    }
+    .form-group {
+      margin-bottom: 10px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    .form-group input, .form-group textarea {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    .form-group textarea {
+      height: 60px;
+    }
+    #output {
+      margin-top: 20px;
+    }
+    .add-form, #generateButton, #copyButton {
+      margin-top: 10px;
+      padding: 10px;
+      border: none;
+      cursor: pointer;
+      color: white;
+      border-radius: 5px;
+    }
+    .add-form {
+      background-color: #007bff;
+    }
+    .add-form:hover {
+      background-color: #0056b3;
+    }
+    #generateButton {
+      background-color: #28a745;
+    }
+    #generateButton:hover {
+      background-color: #218838;
+    }
+    #copyButton {
+      background-color: #dc3545;
+    }
+    #copyButton:hover {
+      background-color: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <h1>Apartment Listing Generator</h1>
+  <div id="form-wrapper" style="white-space: nowrap;">
+    <div class="form-container" id="form-container-1">
+      <h2>Entry 1</h2>
+      <form id="propertyForm-1">
+        <div class="form-group">
+          <label for="propertyName-1">Property Name:</label>
+          <input type="text" id="propertyName-1" name="propertyName" required>
+        </div>
+        <div class="form-group">
+          <label for="propertyURL-1">Property URL:</label>
+          <input type="text" id="propertyURL-1" name="propertyURL">
+        </div>
+        <div class="form-group">
+          <label for="originalPrice-1">Original Price:</label>
+          <input type="number" id="originalPrice-1" name="originalPrice" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label for="leaseLength-1">Lease Length:</label>
+          <input type="number" id="leaseLength-1" name="leaseLength" required>
+        </div>
+        <div class="form-group">
+          <label for="specialMonths-1">Special Months:</label>
+          <input type="number" id="specialMonths-1" name="specialMonths" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label for="sqft-1">Square Footage:</label>
+          <input type="number" id="sqft-1" name="sqft" required>
+        </div>
+        <div class="form-group">
+          <label for="unitNumber-1">Unit Number:</label>
+          <input type="text" id="unitNumber-1" name="unitNumber" required>
+        </div>
+        <div class="form-group">
+          <label for="floorplanName-1">Floorplan Name:</label>
+          <input type="text" id="floorplanName-1" name="floorplanName" required>
+        </div>
+        <div class="form-group">
+          <label for="floorplanURL-1">Floorplan URL:</label>
+          <input type="url" id="floorplanURL-1" name="floorplanURL">
+        </div>
+        <div class="form-group">
+          <label for="availabilityDate-1">Availability Date:</label>
+          <input type="text" id="availabilityDate-1" name="availabilityDate">
+        </div>
+        <div class="form-group">
+          <label for="extraNotes-1">Extra Notes:</label>
+          <textarea id="extraNotes-1" name="extraNotes"></textarea>
+        </div>
+      </form>
+    </div>
+  </div>
+  <button class="add-form" data-form-id="2" onclick="addAnotherEntry()">Add Another Entry</button>
+  <button id="generateButton" onclick="submitAllForms()">Generate Listings</button>
+  <button id="copyButton" onclick="copyToClipboard()">Copy Listings</button>
+  <div id="output"></div>
+
+  <script>
+    var propertyData = [];
+
+    $(document).ready(function() {
+      google.script.run.withSuccessHandler(function(data) {
+        propertyData = data.map(function(row) {
+          return {
+            label: row[0], // Property Name
+            value: row[1]  // Property URL
+          };
+        });
+
+        function initializeAutocomplete(formId) {
+          $("#propertyName-" + formId).autocomplete({
+            source: propertyData,
+            select: function(event, ui) {
+              $("#propertyName-" + formId).val(ui.item.label);
+              $("#propertyURL-" + formId).val(ui.item.value);
+              return false;
+            }
+          });
+        }
+
+        // Initialize autocomplete for the first form
+        initializeAutocomplete(1);
+
+        // Add listener to dynamically created forms
+        $(document).on('click', '.add-form', function() {
+          const newFormId = $(this).data('form-id');
+          initializeAutocomplete(newFormId);
+        });
+      }).getPropertyData();
+    });
+
+    function addAnotherEntry() {
+      var formCount = $('.form-container').length + 1;
+      var newForm = `
+        <div class="form-container" id="form-container-${formCount}">
+          <h2>Entry ${formCount}</h2>
+          <form id="propertyForm-${formCount}">
+            <div class="form-group">
+              <label for="propertyName-${formCount}">Property Name:</label>
+              <input type="text" id="propertyName-${formCount}" name="propertyName" required>
+            </div>
+            <div class="form-group">
+              <label for="propertyURL-${formCount}">Property URL:</label>
+              <input type="text" id="propertyURL-${formCount}" name="propertyURL">
+            </div>
+            <div class="form-group">
+              <label for="originalPrice-${formCount}">Original Price:</label>
+              <input type="number" id="originalPrice-${formCount}" name="originalPrice" step="0.01" required>
+            </div>
+            <div class="form-group">
+              <label for="leaseLength-${formCount}">Lease Length:</label>
+              <input type="number" id="leaseLength-${formCount}" name="leaseLength" required>
+            </div>
+            <div class="form-group">
+              <label for="specialMonths-${formCount}">Special Months:</label>
+              <input type="number" id="specialMonths-${formCount}" name="specialMonths" step="0.01" required>
+            </div>
+            <div class="form-group">
+              <label for="sqft-${formCount}">Square Footage:</label>
+              <input type="number" id="sqft-${formCount}" name="sqft" required>
+            </div>
+            <div class="form-group">
+              <label for="unitNumber-${formCount}">Unit Number:</label>
+              <input type="text" id="unitNumber-${formCount}" name="unitNumber" required>
+            </div>
+            <div class="form-group">
+              <label for="floorplanName-${formCount}">Floorplan Name:</label>
+              <input type="text" id="floorplanName-${formCount}" name="floorplanName" required>
+            </div>
+            <div class="form-group">
+              <label for="floorplanURL-${formCount}">Floorplan URL:</label>
+              <input type="url" id="floorplanURL-${formCount}" name="floorplanURL">
+            </div>
+            <div class="form-group">
+              <label for="availabilityDate-${formCount}">Availability Date:</label>
+              <input type="text" id="availabilityDate-${formCount}" name="availabilityDate">
+            </div>
+            <div class="form-group">
+              <label for="extraNotes-${formCount}">Extra Notes:</label>
+              <textarea id="extraNotes-${formCount}" name="extraNotes"></textarea>
+            </div>
+          </form>
+        </div>
+      `;
+      $('#form-wrapper').append(newForm);
+      initializeAutocomplete(formCount);
+    }
+
+    function submitAllForms() {
+      var output = '';
+      $('.form-container').each(function() {
+        var id = $(this).attr('id').split('-')[2];
+        var propertyName = $('#propertyName-' + id).val();
+        var propertyURL = $('#propertyURL-' + id).val();
+        var originalPrice = parseFloat($('#originalPrice-' + id).val());
+        var leaseLength = parseInt($('#leaseLength-' + id).val());
+        var specialMonths = parseFloat($('#specialMonths-' + id).val());
+        var sqft = $('#sqft-' + id).val();
+        var unitNumber = $('#unitNumber-' + id).val();
+        var floorplanName = $('#floorplanName-' + id).val();
+        var floorplanURL = $('#floorplanURL-' + id).val();
+        var availabilityDate = $('#availabilityDate-' + id).val();
+        var extraNotes = $('#extraNotes-' + id).val();
+
+        var priceAfterSpecials = Math.round(originalPrice - (originalPrice / leaseLength * specialMonths));
+        var regularPriceLine = `$${Math.round(originalPrice)}`;
+        var priceLine = specialMonths > 0 ? `$${priceAfterSpecials} after specials - ${leaseLength} months` : `${regularPriceLine} - ${leaseLength} months`;
+        var specialsLine = specialMonths > 0 ? `<li>Special is ${specialMonths} ${specialMonths == 1 ? 'month' : 'months'} free (Original Price: $${Math.round(originalPrice)})</li>` : '';
+        var floorplanLine = floorplanURL ? `<a href="${floorplanURL}" style="color: #007bff; text-decoration: none;">${floorplanName} Floorplan</a>` : `${floorplanName} Floorplan`;
+
+        output += `
+          <div style="font-size: 13px; font-family: 'Inter', Arial, sans-serif;">
+            <div><strong>${propertyURL ? `<a href="${propertyURL}" style="color: #007bff; text-decoration: underline;">${propertyName}</a>` : propertyName}</strong></div>
+            <ul style="list-style-type: disc; margin-left: 20px; padding-left: 20px;">
+              <li>${priceLine}</li>
+              ${specialsLine}
+              <li>${sqft} sqft Unit #${unitNumber}</li>
+              <li>${floorplanLine}</li>
+              <li>Available ${availabilityDate}</li>
+              <li>Notes: ${extraNotes}</li>
+            </ul>
+          </div>
+          <hr>
+        `;
+      });
+      $('#output').html(output);
+    }
+
+    function copyToClipboard() {
+      var range = document.createRange();
+      range.selectNode(document.getElementById('output'));
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+      document.execCommand('copy');
+      alert('Listings copied to clipboard!');
+    }
+  </script>
+
+  <script>
+  function saveFormData() {
+    $('.form-container').each(function() {
+      var id = $(this).attr('id').split('-')[2];
+      var formData = {
+        propertyName: $('#propertyName-' + id).val(),
+        propertyURL: $('#propertyURL-' + id).val(),
+        originalPrice: $('#originalPrice-' + id).val(),
+        leaseLength: $('#leaseLength-' + id).val(),
+        specialMonths: $('#specialMonths-' + id).val(),
+        sqft: $('#sqft-' + id).val(),
+        unitNumber: $('#unitNumber-' + id).val(),
+        floorplanName: $('#floorplanName-' + id).val(),
+        floorplanURL: $('#floorplanURL-' + id).val(),
+        availabilityDate: $('#availabilityDate-' + id).val(),
+        extraNotes: $('#extraNotes-' + id).val()
+      };
+      localStorage.setItem('formData-' + id, JSON.stringify(formData));
+    });
+  }
+  
+  // Call saveFormData on form change
+  $(document).on('input change', 'input, textarea', function() {
+    saveFormData();
+  });
+</script>
+
+<script>
+  function loadFormData() {
+    $('.form-container').each(function() {
+      var id = $(this).attr('id').split('-')[2];
+      var formData = localStorage.getItem('formData-' + id);
+      
+      if (formData) {
+        formData = JSON.parse(formData);
+        $('#propertyName-' + id).val(formData.propertyName);
+        $('#propertyURL-' + id).val(formData.propertyURL);
+        $('#originalPrice-' + id).val(formData.originalPrice);
+        $('#leaseLength-' + id).val(formData.leaseLength);
+        $('#specialMonths-' + id).val(formData.specialMonths);
+        $('#sqft-' + id).val(formData.sqft);
+        $('#unitNumber-' + id).val(formData.unitNumber);
+        $('#floorplanName-' + id).val(formData.floorplanName);
+        $('#floorplanURL-' + id).val(formData.floorplanURL);
+        $('#availabilityDate-' + id).val(formData.availabilityDate);
+        $('#extraNotes-' + id).val(formData.extraNotes);
+      }
+    });
+  }
+
+  $(document).ready(function() {
+    loadFormData();
+  });
+</script>
+
+
+</body>
+</html>
